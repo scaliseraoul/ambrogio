@@ -1,0 +1,21 @@
+[project]
+name = "ambrogio"
+version = "0.1.0"
+description = "An opinionated dev agent who tackles tech"
+authors = [
+    {name = "Raoul Scalise",email = "scaliseraoul00@gmail.com"}
+]
+license = {text = "GPL-3.0-or-later"}
+readme = "README.md"
+requires-python = ">=3.8"
+packages = [{include = "ambrogio"}]
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project.scripts]
+ambrogio = "ambrogio.__main__:main"
