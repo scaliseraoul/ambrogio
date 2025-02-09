@@ -1,5 +1,6 @@
+from typing import Dict, List
+
 import libcst as cst
-from typing import Dict, List, Tuple
 
 
 class NodeCollector(cst.CSTVisitor):

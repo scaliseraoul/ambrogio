@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
+
 from interrogate import config, coverage
+
 from .repo_manager import RepoPathManager
 
 
