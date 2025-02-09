@@ -8,7 +8,7 @@ Our mission is to help development teams maintain high-quality codebases by auto
 
 ## Roadmap
 
-### Current Focus: Documentation Excellence
+### Features
 - ✅ **Add docstrings** to classes and methods that lack them (optimized for LLM comprehension) 
 
 ### Upcoming Features
