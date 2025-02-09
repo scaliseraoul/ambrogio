@@ -12,7 +12,7 @@ def run_ambrogio(
     openai_key=None,
     model="gpt-4o-mini",
     max_api_calls=DEFAULT_MAX_API_CALLS,
-):
+) -> list[str]:
     """Run Ambrogio docstring fixer with the specified parameters.
 
     This function initializes the necessary components and runs the docstring fixer process.
@@ -24,6 +24,9 @@ def run_ambrogio(
             `OPENAI_API_KEY` if not provided.
         model (str, optional): OpenAI model to use for generating docstrings. Defaults to "gpt-4o-mini".
         max_api_calls (int, optional): Maximum number of OpenAI API calls to make. Defaults to DEFAULT_MAX_CALLS.
+
+    Returns:
+        list[str]: List of absolute paths to files that were modified during the run.
 
     Raises:
         ValueError: If the OpenAI API key is not provided and not found in environment.
@@ -45,8 +48,9 @@ def run_ambrogio(
         model=model,
         max_api_calls=max_api_calls,
     )
-    ambrogio.run()
-    print("Ambrogio: my work is done here, going to take a pizza 🍕")
+    modified_files = ambrogio.run()
+    print("\nAmbrogio: my work is done here, going to take a pizza 🍕")
+    return modified_files
 
 
 def main():

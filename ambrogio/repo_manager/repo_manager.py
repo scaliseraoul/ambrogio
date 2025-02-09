@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 import os
 
 
@@ -18,10 +18,10 @@ class RepoPathManager:
         path() -> Path:
             Returns the repository root path.
 
-        get_relative_path(file_path: str | Path) -> Path:
+        get_relative_path(file_path: Union[str, Path]) -> Path:
             Returns the path relative to the repository root.
 
-        get_absolute_path(relative_path: str | Path) -> Path:
+        get_absolute_path(relative_path: Union[str, Path]) -> Path:
             Converts a repository-relative path to an absolute path.
 
     Raises:
@@ -114,7 +114,7 @@ class RepoPathManager:
             raise ValueError("Repository path not initialized")
         return self._repo_path
 
-    def get_relative_path(self, file_path: str | Path) -> Path:
+    def get_relative_path(self, file_path: Union[str, Path]) -> Path:
         """Get path relative to repository root.
 
         Args:
@@ -132,7 +132,7 @@ class RepoPathManager:
         except ValueError:
             raise ValueError(f"Path {file_path} is outside repository")
 
-    def get_absolute_path(self, relative_path: str | Path) -> Path:
+    def get_absolute_path(self, relative_path: Union[str, Path]) -> Path:
         """Convert repository-relative path to absolute path.
 
         Args:

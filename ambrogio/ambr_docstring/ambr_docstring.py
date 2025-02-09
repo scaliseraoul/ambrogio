@@ -121,6 +121,7 @@ class AmbrogioDocstring:
         self.model = model
         self.max_api_calls = max_api_calls
         self.api_calls_made = 0
+        self.modified_files = []
 
     def _generate_docstring(self, code: str, name: str) -> str:
         """Generate docstring using OpenAI API.
@@ -199,8 +200,9 @@ class AmbrogioDocstring:
         print(f"  Writing changes to {file_path}...")
         file_path.write_text(modified_code)
         print("  Successfully updated file with new docstrings")
+        self.modified_files.append(str(file_path))
 
-    def run(self) -> None:
+    def run(self) -> list[str]:
         """Run the docstring fixer on all files missing docstrings."""
         initial_stats = self.file_getter.get_coverage_stats()
         files = self.file_getter.get_files_without_docstrings()
@@ -235,3 +237,5 @@ class AmbrogioDocstring:
         print("\n📊 Coverage Report:")
         print(f"  Objects still missing docstrings: {final_stats.missing_count}")
         print(f"  Coverage: {final_stats.coverage_percentage:.1f}% {improvement_str}")
+
+        return self.modified_files
