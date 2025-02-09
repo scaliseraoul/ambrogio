@@ -7,9 +7,13 @@ authors = [
 ]
 license = {text = "GPL-3.0-or-later"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 packages = [{include = "ambrogio"}]
 dependencies = [
+    "libcst (>=1.6.0,<2.0.0)",
+    "interrogate (>=1.7.0,<2.0.0)",
+    "openai (>=1.61.1,<2.0.0)",
+    "python-dotenv (>=1.0.1,<2.0.0)"
 ]
 
 
