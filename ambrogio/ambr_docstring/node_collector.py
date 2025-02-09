@@ -18,7 +18,9 @@ class NodeCollector(cst.CSTVisitor):
     def _has_docstring(self, node: cst.CSTNode) -> bool:
         """Check if node already has a docstring."""
         if isinstance(node, (cst.FunctionDef, cst.ClassDef)):
-            if node.body.body and isinstance(node.body.body[0], cst.SimpleStatementLine):
+            if node.body.body and isinstance(
+                node.body.body[0], cst.SimpleStatementLine
+            ):
                 stmt = node.body.body[0]
                 if len(stmt.body) == 1 and isinstance(stmt.body[0], cst.Expr):
                     return isinstance(stmt.body[0].value, cst.SimpleString)

@@ -8,6 +8,7 @@ from .repo_manager import RepoPathManager
 @dataclass
 class CoverageResult:
     """Result of a docstring coverage analysis."""
+
     coverage_percentage: float
     missing_count: int
 
@@ -26,13 +27,13 @@ class FileGetter:
             InterrogateConfig configured to check only public classes and functions.
         """
         return config.InterrogateConfig(
-            ignore_init_method=True,      # Ignore __init__ methods
-            ignore_magic=True,            # Ignore magic methods
-            ignore_module=True,           # Ignore module docstrings
-            ignore_private=True,          # Ignore private objects
-            ignore_nested_functions=False, # Check nested functions
+            ignore_init_method=True,  # Ignore __init__ methods
+            ignore_magic=True,  # Ignore magic methods
+            ignore_module=True,  # Ignore module docstrings
+            ignore_private=True,  # Ignore private objects
+            ignore_nested_functions=False,  # Check nested functions
             ignore_nested_classes=False,  # Check nested classes
-            ignore_semiprivate=True,      # Ignore _semiprivate objects
+            ignore_semiprivate=True,  # Ignore _semiprivate objects
         )
 
     def _run_interrogate(self) -> coverage.InterrogateResults:
@@ -43,7 +44,9 @@ class FileGetter:
         """
         repo_path = self.repo_manager.path
         conf = self._get_interrogate_config()
-        interrogate_coverage = coverage.InterrogateCoverage(paths=[str(repo_path)], conf=conf)
+        interrogate_coverage = coverage.InterrogateCoverage(
+            paths=[str(repo_path)], conf=conf
+        )
         return interrogate_coverage.get_coverage()
 
     def get_coverage_stats(self) -> CoverageResult:
@@ -54,11 +57,12 @@ class FileGetter:
         """
         results = self._run_interrogate()
         return CoverageResult(
-            coverage_percentage=results.perc_covered,
-            missing_count=results.missing
+            coverage_percentage=results.perc_covered, missing_count=results.missing
         )
 
-    def get_files_without_docstrings(self, min_coverage: float = 100.0) -> Dict[str, float]:
+    def get_files_without_docstrings(
+        self, min_coverage: float = 100.0
+    ) -> Dict[str, float]:
         """Find Python files that don't meet the docstring coverage threshold.
 
         Args:
@@ -70,20 +74,19 @@ class FileGetter:
             coverage percentage for files below the threshold.
         """
         results = self._run_interrogate()
-        
+
         # Print overall statistics
         initial_stats = CoverageResult(
-            coverage_percentage=results.perc_covered,
-            missing_count=results.missing
+            coverage_percentage=results.perc_covered, missing_count=results.missing
         )
         print(f"Initial Coverage: {initial_stats.coverage_percentage:.1f}%")
         print(f"Objects missing docstrings: {initial_stats.missing_count}")
-        
+
         # Filter files below threshold and convert to relative paths
         files_below_threshold = {}
         for file_result in results.file_results:
             if file_result.perc_covered < min_coverage:
                 rel_path = self.repo_manager.get_relative_path(file_result.filename)
                 files_below_threshold[str(rel_path)] = file_result.perc_covered
-                
+
         return files_below_threshold

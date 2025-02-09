@@ -27,43 +27,51 @@ class DocstringTransformer(cst.CSTTransformer):
             body=[cst.Expr(value=cst.SimpleString(value=f'"""{docstring}"""'))]
         )
 
-    def leave_ClassDef(self, original_node: cst.ClassDef, updated_node: cst.ClassDef) -> cst.CSTNode:
+    def leave_ClassDef(
+        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
+    ) -> cst.CSTNode:
         """Process a class definition node to potentially add a docstring.
 
-    If the class defined by `original_node` has a corresponding docstring 
-    in the `docstring_map` and `updated_node` does not already have a 
-    docstring, this method will add the appropriate docstring to 
-    `updated_node`.
+        If the class defined by `original_node` has a corresponding docstring
+        in the `docstring_map` and `updated_node` does not already have a
+        docstring, this method will add the appropriate docstring to
+        `updated_node`.
 
-    Args:
-        original_node (cst.ClassDef): The original class definition node.
-        updated_node (cst.ClassDef): The updated class definition node.
+        Args:
+            original_node (cst.ClassDef): The original class definition node.
+            updated_node (cst.ClassDef): The updated class definition node.
 
-    Returns:
-        cst.CSTNode: The updated class definition node, potentially with a 
-        new docstring added."""
+        Returns:
+            cst.CSTNode: The updated class definition node, potentially with a
+            new docstring added."""
         qualified_name = original_node.name.value
-        if qualified_name in self.docstring_map and not self._has_docstring(updated_node):
+        if qualified_name in self.docstring_map and not self._has_docstring(
+            updated_node
+        ):
             print(f"  Adding docstring to class {qualified_name}")
             return self._add_docstring(updated_node, self.docstring_map[qualified_name])
         return updated_node
 
-    def leave_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> cst.CSTNode:
-        """Adds a docstring to a function definition if it is missing and a corresponding 
-    docstring exists in the docstring map.
+    def leave_FunctionDef(
+        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
+    ) -> cst.CSTNode:
+        """Adds a docstring to a function definition if it is missing and a corresponding
+        docstring exists in the docstring map.
 
-    This method checks if the original function definition has a name that 
-    exists in the docstring map. If it does, and the updated function definition 
-    lacks a docstring, it adds the appropriate docstring from the map.
+        This method checks if the original function definition has a name that
+        exists in the docstring map. If it does, and the updated function definition
+        lacks a docstring, it adds the appropriate docstring from the map.
 
-    Args:
-        original_node (cst.FunctionDef): The original function definition node.
-        updated_node (cst.FunctionDef): The updated function definition node.
+        Args:
+            original_node (cst.FunctionDef): The original function definition node.
+            updated_node (cst.FunctionDef): The updated function definition node.
 
-    Returns:
-        cst.CSTNode: The updated function definition node, potentially with a new docstring."""
+        Returns:
+            cst.CSTNode: The updated function definition node, potentially with a new docstring."""
         qualified_name = original_node.name.value
-        if qualified_name in self.docstring_map and not self._has_docstring(updated_node):
+        if qualified_name in self.docstring_map and not self._has_docstring(
+            updated_node
+        ):
             print(f"  Adding docstring to function {qualified_name}")
             return self._add_docstring(updated_node, self.docstring_map[qualified_name])
         return updated_node
@@ -71,7 +79,9 @@ class DocstringTransformer(cst.CSTTransformer):
     def _has_docstring(self, node: cst.CSTNode) -> bool:
         """Check if node already has a docstring."""
         if isinstance(node, (cst.FunctionDef, cst.ClassDef)):
-            if node.body.body and isinstance(node.body.body[0], cst.SimpleStatementLine):
+            if node.body.body and isinstance(
+                node.body.body[0], cst.SimpleStatementLine
+            ):
                 stmt = node.body.body[0]
                 if len(stmt.body) == 1 and isinstance(stmt.body[0], cst.Expr):
                     return isinstance(stmt.body[0].value, cst.SimpleString)
@@ -92,7 +102,12 @@ DEFAULT_MAX_API_CALLS = 12
 class AmbrogioDocstring:
     """Main class for fixing missing docstrings using OpenAI."""
 
-    def __init__(self, openai_api_key: str, model: str = "gpt-3.5-turbo", max_api_calls: int = DEFAULT_MAX_API_CALLS):
+    def __init__(
+        self,
+        openai_api_key: str,
+        model: str = "gpt-3.5-turbo",
+        max_api_calls: int = DEFAULT_MAX_API_CALLS,
+    ):
         """Initialize the docstring fixer.
 
         Args:
@@ -129,15 +144,18 @@ class AmbrogioDocstring:
         response = self.openai_client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that generates clear and concise Python docstrings."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that generates clear and concise Python docstrings.",
+                },
+                {"role": "user", "content": prompt},
             ],
             temperature=0.7,
-            max_tokens=500  # Increased to allow for longer docstrings
+            max_tokens=500,  # Increased to allow for longer docstrings
         )
 
         self.api_calls_made += 1
-        
+
         return response.choices[0].message.content.strip()
 
     def _fix_file_docstrings(self, file_path: Path) -> None:
@@ -154,11 +172,11 @@ class AmbrogioDocstring:
         collector = NodeCollector()
         tree.visit(collector)
         nodes_needing_docstrings = collector.nodes_needing_docstrings
-        
+
         if not nodes_needing_docstrings:
             print("  No missing docstrings found in this file")
             return
-            
+
         print(f"  Found {len(nodes_needing_docstrings)} items needing docstrings")
 
         docstring_map = {}
@@ -182,7 +200,6 @@ class AmbrogioDocstring:
         file_path.write_text(modified_code)
         print("  Successfully updated file with new docstrings")
 
-
     def run(self) -> None:
         """Run the docstring fixer on all files missing docstrings."""
         initial_stats = self.file_getter.get_coverage_stats()
@@ -195,21 +212,26 @@ class AmbrogioDocstring:
 
         for file_path, coverage in files.items():
             abs_path = self.repo_manager.get_absolute_path(file_path)
-            print(f"\nFixing docstrings in {file_path} (current coverage: {coverage:.1f}%)")
+            print(
+                f"\nFixing docstrings in {file_path} (current coverage: {coverage:.1f}%)"
+            )
             self._fix_file_docstrings(abs_path)
 
         # Show coverage improvement
         final_stats = self.file_getter.get_coverage_stats()
-        improvement = final_stats.coverage_percentage - initial_stats.coverage_percentage
-        
+        improvement = (
+            final_stats.coverage_percentage - initial_stats.coverage_percentage
+        )
+
         # Handle improvement calculation when initial coverage was 0
         improvement_str = (
-            f"+{improvement:.1f}%" if initial_stats.coverage_percentage > 0
-            else "(new coverage)" if improvement > 0
+            f"+{improvement:.1f}%"
+            if initial_stats.coverage_percentage > 0
+            else "(new coverage)"
+            if improvement > 0
             else "(no improvement)"
         )
 
         print("\n📊 Coverage Report:")
         print(f"  Objects still missing docstrings: {final_stats.missing_count}")
         print(f"  Coverage: {final_stats.coverage_percentage:.1f}% {improvement_str}")
-

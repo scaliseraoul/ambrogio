@@ -6,15 +6,15 @@ import os
 class RepoPathManager:
     """Singleton manager for handling repository paths.
 
-    This class provides functionality to initialize, retrieve, and manipulate 
-    the path to a repository, ensuring that it is a valid git repository or 
-    contains Python files. It supports both explicit path initialization and 
+    This class provides functionality to initialize, retrieve, and manipulate
+    the path to a repository, ensuring that it is a valid git repository or
+    contains Python files. It supports both explicit path initialization and
     automatic detection from the environment or local directory structure.
 
     Methods:
         initialize(path: Optional[str] = None) -> None:
             Initializes the repository path.
-        
+
         path() -> Path:
             Returns the repository root path.
 
@@ -23,24 +23,25 @@ class RepoPathManager:
 
         get_absolute_path(relative_path: str | Path) -> Path:
             Converts a repository-relative path to an absolute path.
-    
-    Raises:
-        ValueError: If the repository path is not valid or has not been 
-        initialized properly."""
-    _instance: Optional['RepoPathManager'] = None
 
-    def __new__(cls) -> 'RepoPathManager':
+    Raises:
+        ValueError: If the repository path is not valid or has not been
+        initialized properly."""
+
+    _instance: Optional["RepoPathManager"] = None
+
+    def __new__(cls) -> "RepoPathManager":
         """Create and return a singleton instance of RepoPathManager.
 
-    If an instance of RepoPathManager does not already exist, it creates
-    one and initializes the _repo_path attribute to None. If an instance
-    already exists, it returns that instance.
+        If an instance of RepoPathManager does not already exist, it creates
+        one and initializes the _repo_path attribute to None. If an instance
+        already exists, it returns that instance.
 
-    Args:
-        cls (type): The class being instantiated.
+        Args:
+            cls (type): The class being instantiated.
 
-    Returns:
-        RepoPathManager: The singleton instance of RepoPathManager."""
+        Returns:
+            RepoPathManager: The singleton instance of RepoPathManager."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._repo_path: Optional[Path] = None
@@ -59,17 +60,17 @@ class RepoPathManager:
         if path:
             # Convert to absolute path and resolve any symlinks
             repo_path = Path(path).resolve()
-            
+
             # Verify path exists
             if not repo_path.exists():
                 raise ValueError(f"Path does not exist: {repo_path}")
             if not repo_path.is_dir():
                 raise ValueError(f"Path is not a directory: {repo_path}")
-            
+
             # Check if it's a git repository or contains Python files
-            has_git = (repo_path / '.git').exists()
-            has_python = any(repo_path.glob('**/*.py'))
-            
+            has_git = (repo_path / ".git").exists()
+            has_python = any(repo_path.glob("**/*.py"))
+
             if has_git or has_python:
                 self._repo_path = repo_path
             else:
@@ -78,21 +79,21 @@ class RepoPathManager:
                 )
         else:
             # GitHub Actions environment
-            if 'GITHUB_WORKSPACE' in os.environ:
-                self._repo_path = Path(os.environ['GITHUB_WORKSPACE'])
+            if "GITHUB_WORKSPACE" in os.environ:
+                self._repo_path = Path(os.environ["GITHUB_WORKSPACE"])
                 return
-                
+
             # Try to find git repository from current directory
             current_path = Path.cwd()
             while current_path != current_path.parent:
-                if (current_path / '.git').exists():
+                if (current_path / ".git").exists():
                     self._repo_path = current_path
                     return
                 current_path = current_path.parent
-            
+
             # If no git repo found, check if current directory has Python files
             cwd = Path.cwd()
-            if any(cwd.glob('**/*.py')):
+            if any(cwd.glob("**/*.py")):
                 self._repo_path = cwd
             else:
                 raise ValueError(
