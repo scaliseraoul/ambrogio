@@ -5,7 +5,7 @@ import libcst as cst
 from openai import OpenAI
 
 from ambrogio.repo_manager import FileGetter, RepoPathManager
-from .node_collector import NodeCollector
+from .node_collector import NodeNeedingDocstring
 
 
 class DocstringTransformer(cst.CSTTransformer):
@@ -170,7 +170,7 @@ class AmbrogioDocstring:
         tree = cst.parse_module(source_code)
 
         # First pass: collect nodes that need docstrings
-        collector = NodeCollector()
+        collector = NodeNeedingDocstring()
         tree.visit(collector)
         nodes_needing_docstrings = collector.nodes_needing_docstrings
 
@@ -183,10 +183,6 @@ class AmbrogioDocstring:
         docstring_map = {}
         for name, code in nodes_needing_docstrings.items():
             if self.api_calls_made >= self.max_api_calls:
-                print(
-                    f"Maximum number of API calls ({self.max_api_calls}) reached. "
-                    "Increase the limit with --max-api-calls if needed."
-                )
                 break
             docstring = self._generate_docstring(code, name)
             docstring_map[name] = docstring
@@ -200,19 +196,24 @@ class AmbrogioDocstring:
         print(f"  Writing changes to {file_path}...")
         file_path.write_text(modified_code)
         print("  Successfully updated file with new docstrings")
-        self.modified_files.append(str(file_path))
+        self.modified_files.append(str(self.repo_manager.get_relative_path(file_path)))
 
     def run(self) -> list[str]:
         """Run the docstring fixer on all files missing docstrings."""
-        initial_stats = self.file_getter.get_coverage_stats()
-        files = self.file_getter.get_files_without_docstrings()
+        files, initial_coverage = self.file_getter.get_files_and_coverage()
         if not files:
             print("No files need docstring improvements!")
-            return
+            return []
 
         print(f"Files missing docstrings: {len(files)}")
 
         for file_path, coverage in files.items():
+            if self.api_calls_made >= self.max_api_calls:
+                print(
+                    f"Maximum number of API calls ({self.max_api_calls}) reached. "
+                    "Increase the limit with --max-api-calls if needed."
+                )
+                break
             abs_path = self.repo_manager.get_absolute_path(file_path)
             print(
                 f"\nFixing docstrings in {file_path} (current coverage: {coverage:.1f}%)"
@@ -221,18 +222,9 @@ class AmbrogioDocstring:
 
         # Show coverage improvement
         final_stats = self.file_getter.get_coverage_stats()
-        improvement = (
-            final_stats.coverage_percentage - initial_stats.coverage_percentage
-        )
+        improvement = final_stats.coverage_percentage - initial_coverage
 
-        # Handle improvement calculation when initial coverage was 0
-        improvement_str = (
-            f"+{improvement:.1f}%"
-            if initial_stats.coverage_percentage > 0
-            else "(new coverage)"
-            if improvement > 0
-            else "(no improvement)"
-        )
+        improvement_str = f"+{improvement:.1f}%"
 
         print("\n📊 Coverage Report:")
         print(f"  Objects still missing docstrings: {final_stats.missing_count}")

@@ -61,33 +61,31 @@ class FileGetter:
             coverage_percentage=results.perc_covered, missing_count=results.missing
         )
 
-    def get_files_without_docstrings(
+    def get_files_and_coverage(
         self, min_coverage: float = 100.0
-    ) -> Dict[str, float]:
-        """Find Python files that don't meet the docstring coverage threshold.
+    ) -> (Dict[str, float], float):
+        """Retrieve files with coverage below a specified threshold and overall coverage percentage.
 
         Args:
-            min_coverage: Minimum required docstring coverage percentage (0-100).
-                         Default is 100.0, meaning all functions/classes need docstrings.
+            min_coverage (float): The minimum coverage percentage threshold. Files with coverage below this
+                                  value will be included in the results. Defaults to 100.0.
 
         Returns:
-            Dictionary mapping file paths (relative to repo root) to their docstring
-            coverage percentage for files below the threshold.
-        """
+            Tuple[Dict[str, float], float]: A dictionary mapping file paths to their coverage percentages
+                                             for files below the threshold, and the overall coverage percentage
+                                             of the results."""
+
         results = self._run_interrogate()
 
-        # Print overall statistics
-        initial_stats = CoverageResult(
-            coverage_percentage=results.perc_covered, missing_count=results.missing
-        )
-        print(f"Initial Coverage: {initial_stats.coverage_percentage:.1f}%")
-        print(f"Objects missing docstrings: {initial_stats.missing_count}")
-
-        # Filter files below threshold and convert to relative paths
-        files_below_threshold = {}
+        # Collect files below threshold
+        files_below_threshold = []
         for file_result in results.file_results:
             if file_result.perc_covered < min_coverage:
                 rel_path = self.repo_manager.get_relative_path(file_result.filename)
-                files_below_threshold[str(rel_path)] = file_result.perc_covered
+                files_below_threshold.append((str(rel_path), file_result.perc_covered))
 
-        return files_below_threshold
+        # Sort by coverage percentage (ascending)
+        files_below_threshold.sort(key=lambda x: x[1])
+
+        # Convert to dictionary maintaining the sorted order
+        return dict(files_below_threshold), results.perc_covered

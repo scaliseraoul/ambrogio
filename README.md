@@ -1,3 +1,5 @@
+[![PyPI Downloads](https://static.pepy.tech/badge/ambrogio)](https://pepy.tech/projects/ambrogio)
+
 # Ambrogio - tech debt agent
 
 Ambrogio is an opinionated dev agent who tackles tech debt. Starting with docstring improvements, it systematically enhances code quality and maintainability through automated analysis and improvements.
@@ -8,11 +10,10 @@ Our mission is to help development teams maintain high-quality codebases by auto
 
 ## Roadmap
 
-### Current Focus: Documentation Excellence
-- ✅ **Add docstrings** to classes and methods that lack them (optimized for LLM comprehension) 
+### Current Feature
+- ✅ **Add docstrings** to classes and methods that lack them. Making your code readable for humans and LLMs.
 
 ### Upcoming Features
-- **Test Coverage**
   - Pre-PR test runs to prevent regressions
   - Improve existing docstrings in modified methods
   - Documentation generation for easier understanding and maintenance
@@ -59,3 +60,9 @@ ambrogio \
 ### Required Secrets
 
 - `OPENAI_API_KEY`: Your OpenAI API key
+
+
+## Maintainers
+
+- [Raoul Scalise](https://www.linkedin.com/in/raoul-scalise/)
+- [Saro Lovito](https://www.linkedin.com/in/saroantonellolovito/)

@@ -3,7 +3,7 @@ from typing import Dict, List
 import libcst as cst
 
 
-class NodeCollector(cst.CSTVisitor):
+class NodeNeedingDocstring(cst.CSTVisitor):
     """Collect nodes that need docstrings."""
 
     def __init__(self):
