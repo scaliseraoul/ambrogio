@@ -6,7 +6,7 @@ Ambrogio is an opinionated dev agent who tackles tech debt. Starting with docstr
 
 ## Mission
 
-Our mission is to help development teams maintain high-quality codebases by automagically identifying and addressing technical debt, starting with comprehensive and accurate documentation.
+Our mission is to help development teams maintain high-quality codebases by automagically identifying and addressing technical debt, starting with comprehensive and accurate docstrings.
 
 ## Roadmap
 
