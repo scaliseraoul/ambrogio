@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict
 
 import libcst as cst
-from openai import OpenAI
+from litellm import completion
 
 from ambrogio.repo_manager import FileGetter, RepoPathManager
 from .node_collector import NodeNeedingDocstring
@@ -104,20 +104,23 @@ class AmbrogioDocstring:
 
     def __init__(
         self,
-        openai_api_key: str,
+        api_key: str,
         model: str = "gpt-3.5-turbo",
         max_api_calls: int = DEFAULT_MAX_API_CALLS,
+        api_base: str = None,
     ):
         """Initialize the docstring fixer.
 
         Args:
-            openai_api_key: OpenAI API key for generating docstrings
-            model: OpenAI model to use (default: gpt-3.5-turbo)
-            max_api_calls: Maximum number of OpenAI API calls to make (default: 12)
+            api_key: API key for the LLM provider
+            model: Model identifier (default: gpt-3.5-turbo)
+            max_api_calls: Maximum number of API calls to make (default: 12)
+            api_base: Optional base URL for the API endpoint
         """
         self.file_getter = FileGetter()
         self.repo_manager = RepoPathManager()
-        self.openai_client = OpenAI(api_key=openai_api_key)
+        self.api_key = api_key
+        self.api_base = api_base
         self.model = model
         self.max_api_calls = max_api_calls
         self.api_calls_made = 0
@@ -142,22 +145,30 @@ class AmbrogioDocstring:
         Focus on explaining what the code does, not how it does it.
         """
 
-        response = self.openai_client.chat.completions.create(
-            model=self.model,
-            messages=[
+        kwargs = {
+            "model": self.model,
+            "messages": [
                 {
                     "role": "system",
                     "content": "You are a helpful assistant that generates clear and concise Python docstrings.",
                 },
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.7,
-            max_tokens=500,  # Increased to allow for longer docstrings
-        )
+            "temperature": 0.7,
+            "api_key": self.api_key,
+        }
+
+        if self.api_base:
+            kwargs["api_base"] = self.api_base
+
+        kwargs["max_tokens"] = 500  # Increased to allow for longer docstrings
+        response = completion(**kwargs)
 
         self.api_calls_made += 1
 
-        return response.choices[0].message.content.strip()
+        # Extract the generated docstring from the response
+        docstring = response.choices[0].message.content.strip()
+        return docstring
 
     def _fix_file_docstrings(self, file_path: Path) -> None:
         """Fix missing docstrings in a single file.

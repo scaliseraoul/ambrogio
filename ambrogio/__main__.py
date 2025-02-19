@@ -9,33 +9,37 @@ from ambrogio.repo_manager import RepoPathManager
 
 def run_ambrogio(
     repo_path=None,
-    openai_key=None,
+    api_key=None,
     model="gpt-4o-mini",
     max_api_calls=DEFAULT_MAX_API_CALLS,
+    api_base=None,
 ) -> list[str]:
-    """Run Ambrogio docstring fixer with the specified parameters.
+    """Run the Ambrogio process to modify documentation strings in a repository.
 
-    This function initializes the necessary components and runs the docstring fixer process.
-    It can be called directly from another Python process.
+    This function initializes the environment for Ambrogio, ensuring that
+    the necessary API key is available, and then processes the specified
+    repository to update its documentation strings using the OpenAI API.
 
     Args:
-        repo_path (str, optional): Repository path. Defaults to the current directory if not provided.
-        openai_key (str, optional): OpenAI API key. Defaults to the value from environment variable
-            `OPENAI_API_KEY` if not provided.
-        model (str, optional): OpenAI model to use for generating docstrings. Defaults to "gpt-4o-mini".
-        max_api_calls (int, optional): Maximum number of OpenAI API calls to make. Defaults to DEFAULT_MAX_CALLS.
+        repo_path (str, optional): The path to the repository to be processed.
+                                    If not provided, defaults to the current directory.
+        api_key (str, optional): The OpenAI API key for authentication.
+                                  If not provided, it will attempt to use the
+                                  OPENAI_API_KEY environment variable.
+        model (str, optional): The model to use for API calls. Defaults to "gpt-4o-mini".
+        max_api_calls (int, optional): The maximum number of API calls to make.
+                                        Default is set by DEFAULT_MAX_API_CALLS.
+        api_base (str, optional): The base URL for the OpenAI API. If not provided,
+                                  the default OpenAI endpoint will be used.
 
     Returns:
-        list[str]: List of absolute paths to files that were modified during the run.
+        list[str]: A list of modified file paths that were updated during the process."""
 
-    Raises:
-        ValueError: If the OpenAI API key is not provided and not found in environment.
-    """
-    # Get OpenAI API key from args or environment
-    openai_key = openai_key or os.getenv("OPENAI_API_KEY")
-    if not openai_key:
+    # Get API key from args or environment
+    api_key = api_key or os.getenv("OPENAI_API_KEY")
+    if not api_key:
         raise ValueError(
-            "OpenAI API key must be provided either as argument or in OPENAI_API_KEY environment variable"
+            "API key must be provided either as argument or in OPENAI_API_KEY environment variable"
         )
 
     # Initialize repo path manager
@@ -44,9 +48,10 @@ def run_ambrogio(
 
     # Initialize and run Ambrogio
     ambrogio = AmbrogioDocstring(
-        openai_api_key=openai_key,
+        api_key=api_key,
         model=model,
         max_api_calls=max_api_calls,
+        api_base=api_base,
     )
     modified_files = ambrogio.run()
     print("\nAmbrogio: my work is done here, going to take a pizza 🍕")
@@ -54,17 +59,29 @@ def run_ambrogio(
 
 
 def main():
-    """Command-line entry point for the Ambrogio docstring fixer.
+    """Main entry point for the Ambrogio docstring fixer.
 
-    This function sets up command-line argument parsing to configure the
-    behavior of the docstring fixer and calls the main functionality.
+    This function sets up the command-line interface for the Ambrogio tool,
+    allowing users to specify options for the repository path, API key,
+    model type, maximum API calls, and API base URL. It loads environment
+    variables, parses command-line arguments, validates the API key, and
+    then invokes the core functionality to run the docstring fixer.
 
     Args:
-        None
+        --path (str, optional): Repository path. If not provided, uses the current directory.
+        --api-key (str, optional): LLM provider API key. If not provided, attempts to use
+            the OPENAI_API_KEY from the environment.
+        --model (str, optional): LLM model to use for generating docstrings. Defaults to "gpt-4o-mini".
+        --max-api-calls (int, optional): Maximum number of API calls to make. Defaults to
+            DEFAULT_MAX_API_CALLS.
+        --api-base (str, optional): Optional base URL for the API endpoint.
 
     Raises:
-        ValueError: If the OpenAI API key is not provided and not found in environment.
-    """
+        ValueError: If the API key is not provided through arguments or environment variables.
+
+    Returns:
+        None"""
+
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Ambrogio - Your docstring fixer")
@@ -75,37 +92,44 @@ def main():
         default=None,
     )
     parser.add_argument(
-        "--openai-key",
+        "--api-key",
         type=str,
-        help="OpenAI API key. If not provided, will try to use OPENAI_API_KEY from environment",
+        help="LLM provider API key. If not provided, will try to use OPENAI_API_KEY from environment",
         default=None,
     )
     parser.add_argument(
         "--model",
         type=str,
-        help="OpenAI model to use for generating docstrings",
+        help="LLM model to use for generating docstrings",
         default="gpt-4o-mini",
     )
     parser.add_argument(
         "--max-api-calls",
         type=int,
-        help=f"Maximum number of OpenAI API calls to make (default: {DEFAULT_MAX_API_CALLS})",
+        help=f"Maximum number of API calls to make (default: {DEFAULT_MAX_API_CALLS})",
         default=DEFAULT_MAX_API_CALLS,
+    )
+    parser.add_argument(
+        "--api-base",
+        type=str,
+        help="Optional base URL for the API endpoint",
+        default=None,
     )
 
     args = parser.parse_args()
 
-    openai_key = args.openai_key or os.getenv("OPENAI_API_KEY")
-    if not openai_key:
+    api_key = args.api_key or os.getenv("OPENAI_API_KEY")
+    if not api_key:
         raise ValueError(
-            "OpenAI API key must be provided either as argument or in OPENAI_API_KEY environment variable"
+            "API key must be provided either as argument or in OPENAI_API_KEY environment variable"
         )
 
     run_ambrogio(
         repo_path=args.path,
-        openai_key=openai_key,
+        api_key=api_key,
         model=args.model,
         max_api_calls=args.max_api_calls,
+        api_base=args.api_base,
     )
 
 

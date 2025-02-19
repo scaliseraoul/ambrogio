@@ -1,6 +1,6 @@
 [project]
 name = "ambrogio"
-version = "0.1.7"
+version = "0.1.8"
 description = "An opinionated dev agent who tackles tech debt"
 authors = [
     {name = "Raoul Scalise",email = "scaliseraoul00@gmail.com"}
@@ -12,7 +12,7 @@ packages = [{include = "ambrogio"}]
 dependencies = [
     "libcst (>=1.6.0,<2.0.0)",
     "interrogate (>=1.7.0,<2.0.0)",
-    "openai (>=1.61.1,<2.0.0)",
+    "litellm (>=1.30.3,<2.0.0)",
     "python-dotenv (>=1.0.1,<2.0.0)"
 ]
 
