@@ -13,7 +13,6 @@ Our mission is to help development teams maintain high-quality codebases by auto
 ### Current Features
 - ✅ **Smart Docstring Generation**: Automatically adds clear, comprehensive docstrings to classes and methods
 - ✅ **Multi-Provider Support**: Works with various LLM providers through LiteLLM integration
-- ✅ **Flexible Configuration**: Customize the model, API endpoint, and other parameters
 
 ### 🚀 Upcoming Features
 - Pre-PR test runs to prevent regressions
