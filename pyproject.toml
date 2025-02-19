@@ -13,7 +13,9 @@ dependencies = [
     "libcst (>=1.6.0,<2.0.0)",
     "interrogate (>=1.7.0,<2.0.0)",
     "litellm (>=1.30.3,<2.0.0)",
-    "python-dotenv (>=1.0.1,<2.0.0)"
+    "python-dotenv (>=1.0.1,<2.0.0)",
+    "coverage (>=7.4.1,<8.0.0)",
+    "pytest (>=8.0.0,<9.0.0)"
 ]
 
 
