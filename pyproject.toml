@@ -7,13 +7,17 @@ authors = [
 ]
 license = {text = "GPL-3.0-or-later"}
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<4.0"
 packages = [{include = "ambrogio"}]
 dependencies = [
     "libcst (>=1.6.0,<2.0.0)",
     "interrogate (>=1.7.0,<2.0.0)",
     "litellm (>=1.30.3,<2.0.0)",
-    "python-dotenv (>=1.0.1,<2.0.0)"
+    "python-dotenv (>=1.0.1,<2.0.0)",
+    "coverage (>=7.4.1,<8.0.0)",
+    "pytest (>=8.0.0,<9.0.0)",
+    "langgraph (>=0.0.20)",
+    "langchain-core (>=0.3.37,<0.4.0)",
 ]
 
 
@@ -23,3 +27,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project.scripts]
 ambrogio = "ambrogio.__main__:main"
+[tool.poetry.group.dev.dependencies]
+pytest-mock = "^3.14.0"
+pre-commit = "^4.1.0"
+

@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Dict
 
 import libcst as cst
-from litellm import completion
 
 from ambrogio.repo_manager import FileGetter, RepoPathManager
+from ambrogio.llm_manager import LLMManager
 from .node_collector import NodeNeedingDocstring
 
 
@@ -102,29 +102,18 @@ DEFAULT_MAX_API_CALLS = 12
 class AmbrogioDocstring:
     """Main class for fixing missing docstrings using OpenAI."""
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str = "gpt-3.5-turbo",
-        max_api_calls: int = DEFAULT_MAX_API_CALLS,
-        api_base: str = None,
-    ):
+    def __init__(self, max_api_calls: int = 12):
         """Initialize the docstring fixer.
 
         Args:
-            api_key: API key for the LLM provider
-            model: Model identifier (default: gpt-3.5-turbo)
             max_api_calls: Maximum number of API calls to make (default: 12)
-            api_base: Optional base URL for the API endpoint
         """
         self.file_getter = FileGetter()
         self.repo_manager = RepoPathManager()
-        self.api_key = api_key
-        self.api_base = api_base
-        self.model = model
+        self.llm_manager = LLMManager.get_instance()
+        self.modified_files = []
         self.max_api_calls = max_api_calls
         self.api_calls_made = 0
-        self.modified_files = []
 
     def _generate_docstring(self, code: str, name: str) -> str:
         """Generate docstring using OpenAI API.
@@ -140,35 +129,26 @@ class AmbrogioDocstring:
             RuntimeError: If maximum API calls limit has been reached
         """
 
-        prompt = f"""Generate a concise but informative docstring for this Python {code}. 
-        The docstring should follow Google style and include Args and Returns sections if applicable.
-        Focus on explaining what the code does, not how it does it.
-        """
-
-        kwargs = {
-            "model": self.model,
-            "messages": [
+        # Use LLM manager to generate docstring
+        docstring = self.llm_manager.get_completion(
+            messages=[
                 {
                     "role": "system",
                     "content": "You are a helpful assistant that generates clear and concise Python docstrings.",
                 },
-                {"role": "user", "content": prompt},
+                {
+                    "role": "user",
+                    "content": f"""Generate a concise but informative docstring for this Python {code}. 
+                    The docstring should follow Google style and include Args and Returns sections if applicable.
+                    Focus on explaining what the code does, not how it does it.""",
+                },
             ],
-            "temperature": 0.7,
-            "api_key": self.api_key,
-        }
-
-        if self.api_base:
-            kwargs["api_base"] = self.api_base
-
-        kwargs["max_tokens"] = 500  # Increased to allow for longer docstrings
-        response = completion(**kwargs)
+            temperature=0.7,
+            max_tokens=500,  # Allow for longer docstrings
+        )
 
         self.api_calls_made += 1
-
-        # Extract the generated docstring from the response
-        docstring = response.choices[0].message.content.strip()
-        return docstring
+        return docstring.strip()
 
     def _fix_file_docstrings(self, file_path: Path) -> None:
         """Fix missing docstrings in a single file.
