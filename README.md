@@ -13,12 +13,12 @@ Our mission is to help development teams maintain high-quality codebases by auto
 ### Current Features
 - ✅ **Smart Docstring Generation**: Automatically adds clear, comprehensive docstrings to classes and methods
 - ✅ **Multi-Provider Support**: Works with various LLM providers through LiteLLM integration
+- ✅ **Unit Test Generation** (Beta): Analyzes code coverage and generates missing unit tests
 
 ### 🚀 Upcoming Features
 - Pre-PR test runs to prevent regressions
 - Improve existing docstrings in modified methods
 - Documentation generation for easier understanding
-- Unit test generation and enhancement
 - Type safety refactoring
 - Spaghetti code cleanup
 - Code formatting and best practices enforcement
@@ -34,7 +34,7 @@ pip install ambrogio
 ### Basic Usage
 
 ```bash
-# Run with default settings (uses OPENAI_API_KEY from environment)
+# Run docstring generation with default settings (uses OPENAI_API_KEY from environment)
 ambrogio
 
 # Run with custom configuration
@@ -43,7 +43,14 @@ ambrogio \
   --api-key your-api-key \
   --model gpt-4 \
   --max-api-calls 20
+
+# Run unit test generation (Beta)
+ambrogio \
+  --mode coverage \
+  --max-iterations 5
 ```
+
+> ⚠️ **Note**: The unit test generation feature is currently in beta. It must be run within your virtual environment. You need pytest installed.
 
 ### Advanced Usage
 
@@ -63,11 +70,18 @@ ambrogio \
 ### Available Options
 
 ```
+Common Options:
 --path           Path to the Python project (default: current directory)
 --api-key        API key for your LLM provider (default: OPENAI_API_KEY from env)
 --model          Model to use (default: gpt-4o-mini)
---max-api-calls  Maximum number of API calls per run (default: 12)
 --api-base       Base URL for API endpoint (required for Azure, optional for others)
+--mode           Mode to run in ('docstring' or 'coverage'). Default: docstring
+
+Docstring Mode Options:
+--max-api-calls  Maximum number of API calls per run (default: 12)
+
+Coverage Mode Options:
+--max-iterations Maximum number of test generation attempts per file (default: 3)
 ```
 
 ### Environment Variables

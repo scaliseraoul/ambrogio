@@ -6,6 +6,7 @@ from coverage import Coverage
 
 from ambrogio.repo_manager import RepoPathManager
 from .ambr_test_generator import AmbrogioTestGenerator
+from .pytest_reportert import silence_stdout
 
 
 class CoverageAnalyzer:
@@ -14,19 +15,11 @@ class CoverageAnalyzer:
     def __init__(
         self,
         repo_path: Optional[Path] = None,
-        api_key: Optional[str] = None,
-        model: str = "gpt-4",
-        max_api_calls: int = 12,
-        api_base: Optional[str] = None,
     ):
         """Initialize the coverage analyzer.
 
         Args:
             repo_path: Path to the repository root. If not provided, uses current directory.
-            api_key: API key for test generation. Required if generating tests.
-            model: Model to use for generating tests. Defaults to gpt-4.
-            max_api_calls: Maximum number of API calls for test generation.
-            api_base: Optional base URL for the API endpoint.
         """
         self.repo_manager = RepoPathManager()
         self.repo_manager.initialize(repo_path)
@@ -37,16 +30,9 @@ class CoverageAnalyzer:
             source=[str(self.repo_path)],
         )
 
-        if api_key:
-            self.test_generator = AmbrogioTestGenerator(
-                api_key=api_key,
-                model=model,
-                max_api_calls=max_api_calls,
-                api_base=api_base,
-            )
-        else:
-            self.test_generator = None
+        self.test_generator = AmbrogioTestGenerator(base_path=self.repo_path)
 
+    @silence_stdout
     def analyze_coverage(self) -> Dict[str, float]:
         """Run coverage analysis on the project.
 
@@ -77,12 +63,12 @@ class CoverageAnalyzer:
 
             executed = len(statements) - len(missing)
             coverage_percent = (executed / len(statements)) * 100
-            rel_path = os.path.relpath(filename, str(self.repo_path))
+            rel_path = os.path.abspath(filename)
             file_coverage[rel_path] = coverage_percent
 
         return file_coverage
 
-    def get_uncovered_lines(self, file_path: str) -> List[int]:
+    def get_uncovered_lines(self, file_path: Path) -> List[int]:
         """Get line numbers that are not covered by tests.
 
         Args:
@@ -91,47 +77,70 @@ class CoverageAnalyzer:
         Returns:
             List of line numbers that lack test coverage
         """
-        abs_path = str(self.repo_path / file_path)
         self.coverage.load()
 
-        _, _, _, missing, _ = self.coverage.analysis2(abs_path)
+        _, _, _, missing, _ = self.coverage.analysis2(str(file_path))
         return missing
 
-    def generate_tests(self, file_path: str) -> Tuple[Optional[str], str]:
-        """Generate test cases for uncovered code.
+    def generate_tests(
+        self,
+        source_file_path: Path,
+        test_execution_error: str = None,
+        test_file_path: Path = None,
+    ) -> Tuple[Path, str]:
+        """Generates a test file for the specified source file based on uncovered lines.
+
+        This method identifies uncovered lines in the provided source file and
+        generates a corresponding test file. If a test execution error is specified,
+        it is included in the generated test content. The test file is created if it
+        does not already exist.
 
         Args:
-            file_path: Path to the file to analyze
+            source_file_path (Path): The path to the source file for which tests are to be generated.
+            test_execution_error (str, optional): An error message to include in the generated test file, if any.
+            test_file_path (Path, optional): The path where the generated test file should be saved.
+                                              If not provided, the default location will be used.
 
         Returns:
-            Tuple containing:
-            - Path to the generated test file (or None if no tests were generated)
-            - Status message or error description
-        """
-        if not self.test_generator:
-            return None, "No API key provided for test generation"
+            Tuple[Path, str]: A tuple containing the path to the generated test file and its content as a string."""
+        uncovered_lines = self.get_uncovered_lines(source_file_path)
 
-        uncovered_lines = self.get_uncovered_lines(file_path)
-        if not uncovered_lines:
-            return None, "File has complete test coverage!"
+        test_file, test_content = self.test_generator.generate_test_file(
+            source_file_path=source_file_path,
+            uncovered_lines=uncovered_lines,
+            test_execution_error=test_execution_error,
+            test_file_path=test_file_path,
+        )
 
-        try:
-            source_file = self.repo_path / file_path
-            test_file, test_content = self.test_generator.generate_test_file(
-                source_file, uncovered_lines
-            )
+        os.makedirs(os.path.dirname(test_file), exist_ok=True)
+        with open(test_file, "w") as f:
+            f.write(test_content)
+        return test_file, test_content
 
-            if test_file and test_content:
-                # Create test file
-                os.makedirs(os.path.dirname(test_file), exist_ok=True)
-                with open(test_file, "w") as f:
-                    f.write(test_content)
-                return test_file, f"Generated test file: {test_file}"
-            else:
-                return None, test_content
+    def clean_tests(
+        self, test_execution_error: str = None, test_file_path: Path = None
+    ) -> Tuple[Path, str]:
+        """Cleans and generates a test file based on the provided execution error and file path.
 
-        except Exception as e:
-            return None, f"Error generating tests: {str(e)}"
+        This method utilizes the test generator to clean the contents of a test file
+        and saves the cleaned content to a specified location. It ensures that the
+        necessary directories are created if they do not exist.
+
+        Args:
+            test_execution_error (str, optional): An optional error message related to the test execution.
+            test_file_path (Path, optional): The path to the test file to be cleaned.
+
+        Returns:
+            Tuple[Path, str]: A tuple containing the path to the cleaned test file and its content as a string."""
+
+        test_file, test_content = self.test_generator.clean_test_file(
+            test_execution_error=test_execution_error, test_file_path=test_file_path
+        )
+
+        os.makedirs(os.path.dirname(test_file), exist_ok=True)
+        with open(test_file, "w") as f:
+            f.write(test_content)
+        return test_file, test_content
 
     def _find_test_files(self) -> List[Path]:
         """Find all test files in the project.
