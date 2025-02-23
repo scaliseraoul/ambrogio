@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Optional, Union
-import os
 
 
 class RepoPathManager:
@@ -78,11 +77,6 @@ class RepoPathManager:
                     f"Path {repo_path} is neither a git repository nor contains Python files"
                 )
         else:
-            # GitHub Actions environment
-            if "GITHUB_WORKSPACE" in os.environ:
-                self._repo_path = Path(os.environ["GITHUB_WORKSPACE"])
-                return
-
             # Try to find git repository from current directory
             current_path = Path.cwd()
             while current_path != current_path.parent:
@@ -142,3 +136,97 @@ class RepoPathManager:
             Absolute path
         """
         return self.path / Path(relative_path)
+
+    def get_repo_structure(self) -> str:
+        """Get a string representation of the repository structure.
+
+        Returns:
+            str: A string containing information about the repository structure,
+                 including Python files, their exports (classes/functions), and imports.
+        """
+        import ast
+        from typing import Set, List
+
+        def extract_imports(tree: ast.AST) -> Set[str]:
+            """Extracts imported module names from an Abstract Syntax Tree (AST).
+
+            This function traverses the given AST and collects all the names of
+            modules and symbols that are imported using `import` and `from ... import`
+            statements. The imported names are returned as a set to ensure uniqueness.
+
+            Args:
+                tree (ast.AST): The root node of the AST to be analyzed.
+
+            Returns:
+                Set[str]: A set containing the names of all imported modules and symbols."""
+            imports = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for name in node.names:
+                        imports.add(name.name)
+                elif isinstance(node, ast.ImportFrom):
+                    module = node.module if node.module else ""
+                    for name in node.names:
+                        if module:
+                            imports.add(f"{module}.{name.name}")
+                        else:
+                            imports.add(name.name)
+            return imports
+
+        def extract_exports(tree: ast.AST) -> List[str]:
+            """Extracts the names of all classes and functions defined in an AST.
+
+            This function traverses an Abstract Syntax Tree (AST) and collects the names of
+            all class and function definitions. The extracted names can be used to identify
+            the exported members of a module.
+
+            Args:
+                tree (ast.AST): The Abstract Syntax Tree to traverse.
+
+            Returns:
+                List[str]: A list of names of classes and functions found in the AST."""
+            exports = []
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+                    exports.append(node.name)
+            return exports
+
+        structure = []
+        structure.append(f"Repository Root: {self.path}")
+
+        # Find all Python files
+        for py_file in self.path.rglob("*.py"):
+            # Skip virtual environments and hidden directories
+            if any(
+                part.startswith(".") or part in {"venv", "env", "__pycache__"}
+                for part in py_file.parts
+            ):
+                continue
+
+            try:
+                rel_path = self.get_relative_path(py_file)
+                with open(py_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Parse the file
+                tree = ast.parse(content)
+
+                # Extract information
+                imports = extract_imports(tree)
+                exports = extract_exports(tree)
+
+                # Add to structure string
+                structure.append(f"\nFile: {rel_path}")
+                if exports:
+                    structure.append("  Exports:")
+                    for export in sorted(exports):
+                        structure.append(f"    - {export}")
+                if imports:
+                    structure.append("  Imports:")
+                    for import_stmt in sorted(imports):
+                        structure.append(f"    - {import_stmt}")
+
+            except Exception as e:
+                structure.append(f"\nFile: {rel_path} (Error: {str(e)})")
+
+        return "\n".join(structure)
