@@ -109,7 +109,7 @@ class AmbrogioDocstring:
             max_api_calls: Maximum number of API calls to make (default: 12)
         """
         self.file_getter = FileGetter()
-        self.repo_manager = RepoPathManager()
+        self.repo_manager = RepoPathManager.get_instance()
         self.llm_manager = LLMManager.get_instance()
         self.modified_files = []
         self.max_api_calls = max_api_calls

@@ -5,56 +5,64 @@ from typing import Optional, Union
 class RepoPathManager:
     """Singleton manager for handling repository paths.
 
-    This class provides functionality to initialize, retrieve, and manipulate
-    the path to a repository, ensuring that it is a valid git repository or
-    contains Python files. It supports both explicit path initialization and
-    automatic detection from the environment or local directory structure.
+    This class provides functionality to initialize and manage repository paths.
+    It follows a simple pattern:
+    1. Initialize once with RepoPathManager.initialize(path)
+    2. Access from anywhere with RepoPathManager.get_instance()
+
+    Example:
+        >>> RepoPathManager.initialize("/path/to/repo")
+        >>> manager = RepoPathManager.get_instance()
+        >>> manager.path
+        Path('/path/to/repo')
 
     Methods:
         initialize(path: Optional[str] = None) -> None:
-            Initializes the repository path.
+            Class method to initialize the repository path.
+
+        get_instance() -> RepoPathManager:
+            Get the singleton instance.
 
         path() -> Path:
-            Returns the repository root path.
-
-        get_relative_path(file_path: Union[str, Path]) -> Path:
-            Returns the path relative to the repository root.
-
-        get_absolute_path(relative_path: Union[str, Path]) -> Path:
-            Converts a repository-relative path to an absolute path.
+            Get the repository root path.
 
     Raises:
-        ValueError: If the repository path is not valid or has not been
-        initialized properly."""
+        ValueError: If operations are attempted before initialization."""
 
     _instance: Optional["RepoPathManager"] = None
+    _repo_path: Optional[Path] = None
 
-    def __new__(cls) -> "RepoPathManager":
-        """Create and return a singleton instance of RepoPathManager.
-
-        If an instance of RepoPathManager does not already exist, it creates
-        one and initializes the _repo_path attribute to None. If an instance
-        already exists, it returns that instance.
-
-        Args:
-            cls (type): The class being instantiated.
-
-        Returns:
-            RepoPathManager: The singleton instance of RepoPathManager."""
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._repo_path: Optional[Path] = None
         return cls._instance
 
-    def initialize(self, path: Optional[str] = None) -> None:
+    @classmethod
+    def get_instance(cls) -> "RepoPathManager":
+        """Get the singleton instance of RepoPathManager.
+
+        Returns:
+            RepoPathManager: The singleton instance.
+
+        Raises:
+            ValueError: If the repository path hasn't been initialized.
+
+        Example:
+            >>> manager = RepoPathManager.get_instance()
+            >>> print(manager.path)  # Access the repository path"""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    @classmethod
+    def initialize(cls, path: Optional[str] = None) -> None:
         """Initialize the repository path.
 
         Args:
-            path: Optional explicit path to the repository. If None, will attempt to
-                 detect from environment or local directory.
+            path: Optional path to repository root. If not provided, will attempt to detect.
 
         Raises:
-            ValueError: If the path doesn't exist, isn't a git repository, or doesn't contain Python files.
+            ValueError: If the path doesn't exist or is not a valid repository.
         """
         if path:
             # Convert to absolute path and resolve any symlinks
@@ -66,76 +74,90 @@ class RepoPathManager:
             if not repo_path.is_dir():
                 raise ValueError(f"Path is not a directory: {repo_path}")
 
-            # Check if it's a git repository or contains Python files
+            # Check for valid project markers
             has_git = (repo_path / ".git").exists()
-            has_python = any(repo_path.glob("**/*.py"))
+            has_poetry = (repo_path / "pyproject.toml").exists()
+            has_python = any(
+                p
+                for p in repo_path.glob("**/*.py")
+                if ".venv" not in str(p) and "__pycache__" not in str(p)
+            )
 
-            if has_git or has_python:
-                self._repo_path = repo_path
+            if has_git or has_poetry or has_python:
+                cls._repo_path = repo_path
             else:
                 raise ValueError(
-                    f"Path {repo_path} is neither a git repository nor contains Python files"
+                    f"Path {repo_path} is not a valid git repository, poetry project, or Python project"
                 )
         else:
-            # Try to find git repository from current directory
+            # Try to find repository from current directory
             current_path = Path.cwd()
             while current_path != current_path.parent:
-                if (current_path / ".git").exists():
-                    self._repo_path = current_path
+                if (current_path / ".git").exists() or (
+                    current_path / "pyproject.toml"
+                ).exists():
+                    cls._repo_path = current_path
                     return
                 current_path = current_path.parent
 
-            # If no git repo found, check if current directory has Python files
+            # If no markers found, check for Python files
             cwd = Path.cwd()
-            if any(cwd.glob("**/*.py")):
-                self._repo_path = cwd
+            if any(
+                p
+                for p in cwd.glob("**/*.py")
+                if ".venv" not in str(p) and "__pycache__" not in str(p)
+            ):
+                cls._repo_path = cwd
             else:
-                raise ValueError(
-                    "Current directory is not in a git repository and contains no Python files"
-                )
+                raise ValueError("Current directory is not a valid repository")
 
-    @property
-    def path(self) -> Path:
+    @classmethod
+    def path(cls) -> Path:
         """Get the repository root path.
 
         Returns:
-            Path object pointing to repository root.
+            Path: The absolute path to the repository root.
 
         Raises:
             ValueError: If path hasn't been initialized.
         """
-        if self._repo_path is None:
+        if cls._repo_path is None:
             raise ValueError("Repository path not initialized")
-        return self._repo_path
+        return cls._repo_path
 
-    def get_relative_path(self, file_path: Union[str, Path]) -> Path:
+    @classmethod
+    def get_relative_path(cls, file_path: Union[str, Path]) -> Path:
         """Get path relative to repository root.
 
         Args:
             file_path: Absolute or relative path to convert
 
         Returns:
-            Path relative to repository root
+            Path: The path relative to the repository root.
 
         Raises:
-            ValueError: If path is outside repository
+            ValueError: If path is outside repository or repo not initialized.
         """
         abs_path = Path(file_path).resolve()
         try:
-            return abs_path.relative_to(self.path)
+            return abs_path.relative_to(cls.path())
         except ValueError:
             raise ValueError(f"Path {file_path} is outside repository")
 
-    def get_absolute_path(self, relative_path: Union[str, Path]) -> Path:
+    @classmethod
+    def get_absolute_path(cls, relative_path: Union[str, Path]) -> Path:
         """Convert repository-relative path to absolute path.
 
         Args:
             relative_path: Path relative to repository root
 
         Returns:
-            Absolute path
+            Path: The absolute path.
+
+        Raises:
+            ValueError: If repo path not initialized.
         """
-        return self.path / Path(relative_path)
+        return cls.path() / Path(relative_path)
 
     def get_repo_structure(self) -> str:
         """Get a string representation of the repository structure.

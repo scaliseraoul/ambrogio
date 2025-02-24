@@ -1,24 +1,78 @@
 import os.path
 from pathlib import Path
 from typing import List, Optional, Tuple
-
 from ambrogio.llm_manager import LLMManager
+from ambrogio.repo_manager import RepoPathManager
 
 
 class AmbrogioTestGenerator:
-    """Generates test cases for uncovered code using LLM."""
+    """Generates and manages test cases for uncovered code using LLM."""
 
     def __init__(
         self,
-        base_path: Path,
     ):
         """Initialize the test generator.
 
         Args:
             base_path: Base path for the project
         """
-        self.base_path = base_path
+        self.base_path = RepoPathManager.get_instance().path()
         self.llm_manager = LLMManager.get_instance()
+
+    def generate_and_save_tests(
+        self,
+        source_file_path: Path,
+        uncovered_lines: List[int],
+        test_execution_error: str = None,
+        test_file_path: Path = None,
+    ) -> Tuple[Path, str]:
+        """Generates and saves a test file for the specified source file.
+
+        This method generates test content and saves it to the specified location. If a test
+        execution error is provided, it is included in the generated test content.
+
+        Args:
+            source_file_path (Path): The path to the source file for which tests are to be generated.
+            uncovered_lines (List[int]): List of line numbers that lack test coverage.
+            test_execution_error (str, optional): An error message to include in the generated test file.
+            test_file_path (Path, optional): The path where the generated test file should be saved.
+
+        Returns:
+            Tuple[Path, str]: A tuple containing the path to the generated test file and its content."""
+        test_file, test_content = self.generate_test_file(
+            source_file_path=source_file_path,
+            uncovered_lines=uncovered_lines,
+            test_execution_error=test_execution_error,
+            test_file_path=test_file_path,
+        )
+
+        os.makedirs(os.path.dirname(test_file), exist_ok=True)
+        with open(test_file, "w") as f:
+            f.write(test_content)
+        return test_file, test_content
+
+    def clean_and_save_tests(
+        self, test_execution_error: str, test_file_path: Path
+    ) -> Tuple[Path, str]:
+        """Cleans and saves a test file based on execution errors.
+
+        This method cleans the test file content by removing failing tests and saves
+        the cleaned content back to the file.
+
+        Args:
+            test_execution_error (str): The error message from test execution.
+            test_file_path (Path): The path to the test file to be cleaned.
+
+        Returns:
+            Tuple[Path, str]: A tuple containing the path to the cleaned test file and its content."""
+        test_file, test_content = self.clean_test_file(
+            test_execution_error=test_execution_error, test_file_path=test_file_path
+        )
+
+        os.makedirs(os.path.dirname(test_file), exist_ok=True)
+        with open(test_file, "w") as f:
+            f.write(test_content)
+        return test_file, test_content
 
     def generate_test_file(
         self,

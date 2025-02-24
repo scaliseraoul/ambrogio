@@ -1,5 +1,6 @@
 """Langraph-based test generation pipeline for Ambrogio."""
 
+import random
 from pathlib import Path
 from typing import Dict, Optional, Any, TypedDict, Annotated
 
@@ -8,6 +9,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 
 from .ambr_coverage import CoverageAnalyzer
+from .ambr_test_generator import AmbrogioTestGenerator
 from .pytest_reportert import PytestReporter, silence_stdout
 
 
@@ -36,9 +38,10 @@ def create_test_pipeline(
         A langgraph StateGraph instance representing the pipeline
     """
     # Initialize components
-    coverage_analyzer = CoverageAnalyzer(
-        repo_path=repo_path,
-    )
+    coverage_analyzer = CoverageAnalyzer()
+
+    # Initialize test generator for test management
+    test_generator = AmbrogioTestGenerator()
 
     def analyze_coverage(state: TestState) -> Dict[str, Any]:
         """Run coverage analysis and find files needing tests."""
@@ -49,10 +52,9 @@ def create_test_pipeline(
         for source_file_path, coverage in coverage_data.items():
             print(f"{source_file_path}: {coverage:.2f}% coverage")
 
-        # Find file with lowest coverage
-        lowest_coverage_file = min(coverage_data.items(), key=lambda x: x[1])[0]
+        source_file_path = random.choice(list(coverage_data.keys()))
 
-        return {"source_file_path": Path(lowest_coverage_file)}
+        return {"source_file_path": Path(source_file_path)}
 
     def generate_test(state: TestState) -> Dict[str, Any]:
         """Generate a test based on the current state.
@@ -75,14 +77,20 @@ def create_test_pipeline(
                   or an error message if test generation failed."""
         state["iteration"] += 1
 
+        source_file_path = state.get("source_file_path")
         test_file_path = state.get("test_file_path", None)
         test_execution_error = state.get("test_execution_error", None)
 
+        uncovered_lines = coverage_analyzer.get_uncovered_lines(source_file_path)
+
         try:
-            test_source_file_path, test_content = coverage_analyzer.generate_tests(
-                source_file_path=state["source_file_path"],
-                test_file_path=test_file_path,
-                test_execution_error=test_execution_error,
+            test_source_file_path, test_content = (
+                test_generator.generate_and_save_tests(
+                    source_file_path=source_file_path,
+                    test_file_path=test_file_path,
+                    test_execution_error=test_execution_error,
+                    uncovered_lines=uncovered_lines,
+                )
             )
 
             if not test_source_file_path or not test_content:
@@ -99,48 +107,6 @@ def create_test_pipeline(
         except Exception as e:
             return {
                 "error": f"Error generating test: {str(e)}",
-                "iteration": state["iteration"],
-            }
-
-    def clean_test(state: TestState) -> Dict[str, Any]:
-        """Increments the iteration count in the given state and attempts to clean
-        the test file specified in the state. It utilizes the coverage analyzer
-        to process the test file and handle any execution errors.
-
-        Args:
-            state (TestState): A dictionary containing the state of the test,
-                               including the current iteration, test file path,
-                               and any execution errors.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the updated iteration count,
-                             the cleaned test file path, or an error message
-                             if the cleaning process fails."""
-        state["iteration"] += 1
-
-        test_file_path = state.get("test_file_path", None)
-        test_execution_error = state.get("test_execution_error", None)
-
-        try:
-            test_source_file_path, test_content = coverage_analyzer.clean_tests(
-                test_file_path=test_file_path,
-                test_execution_error=test_execution_error,
-            )
-
-            if not test_source_file_path or not test_content:
-                return {
-                    "error": "Failed to clean test content",
-                    "iteration": state["iteration"],
-                }
-
-            return {
-                "iteration": state["iteration"],
-                "test_file_path": test_source_file_path,
-                "test_execution_error": None,
-            }
-        except Exception as e:
-            return {
-                "error": f"Error cleaning test: {str(e)}",
                 "iteration": state["iteration"],
             }
 

@@ -48,9 +48,7 @@ def run_ambrogio(
         )
 
     # Initialize repo path manager
-    repo_manager = RepoPathManager()
-    repo_manager.initialize(repo_path)
-
+    RepoPathManager.initialize(path=repo_path)
     # Initialize LLM manager
     LLMManager.initialize(api_key=api_key, model=model, api_base=api_base)
 
@@ -92,6 +90,7 @@ def run_coverage(
             "API key must be provided either as argument or in OPENAI_API_KEY environment variable"
         )
 
+    RepoPathManager.initialize(path=repo_path)
     # Initialize LLM manager
     LLMManager.initialize(api_key=api_key, model=model, api_base=api_base)
 

@@ -19,7 +19,7 @@ class FileGetter:
 
     def __init__(self):
         """Initialize FileGetter with repo path manager."""
-        self.repo_manager = RepoPathManager()
+        self.repo_manager = RepoPathManager.get_instance()
 
     def _get_interrogate_config(self) -> config.InterrogateConfig:
         """Get the standard interrogate configuration.
@@ -43,7 +43,7 @@ class FileGetter:
         Returns:
             InterrogateResults containing coverage analysis.
         """
-        repo_path = self.repo_manager.path
+        repo_path = self.repo_manager.path()
         conf = self._get_interrogate_config()
         interrogate_coverage = coverage.InterrogateCoverage(
             paths=[str(repo_path)], conf=conf
