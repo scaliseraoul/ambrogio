@@ -1,4 +1,6 @@
 [![PyPI Downloads](https://static.pepy.tech/badge/ambrogio)](https://pepy.tech/projects/ambrogio)
+[![Python package](https://github.com/scaliseraoul/ambrogio/actions/workflows/python-package.yml/badge.svg)](https://github.com/scaliseraoul/ambrogio/actions/workflows/python-package.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 # Ambrogio - tech debt agent
 
