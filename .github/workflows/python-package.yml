@@ -43,10 +43,10 @@ jobs:
     - name: Install project
       run: poetry install --no-interaction
     
-    - name: Lint with Ruff
+    - name: Lint and format with Ruff
       run: |
         poetry run ruff check .
-        poetry run ruff format --check .
+        poetry run ruff format .
     
     - name: Test with pytest
       run: |

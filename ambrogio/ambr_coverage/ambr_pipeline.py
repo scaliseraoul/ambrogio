@@ -84,13 +84,14 @@ def create_test_pipeline(
         uncovered_lines = coverage_analyzer.get_uncovered_lines(source_file_path)
 
         try:
-            test_source_file_path, test_content = (
-                test_generator.generate_and_save_tests(
-                    source_file_path=source_file_path,
-                    test_file_path=test_file_path,
-                    test_execution_error=test_execution_error,
-                    uncovered_lines=uncovered_lines,
-                )
+            (
+                test_source_file_path,
+                test_content,
+            ) = test_generator.generate_and_save_tests(
+                source_file_path=source_file_path,
+                test_file_path=test_file_path,
+                test_execution_error=test_execution_error,
+                uncovered_lines=uncovered_lines,
             )
 
             if not test_source_file_path or not test_content:
