@@ -45,7 +45,8 @@ class PytestReporter:
         self.errors: List[str] = []
         self.captured_output = StringIO()
 
-    def _format_error(self, error_msg: str, tb: Optional[str] = None) -> str:
+    @staticmethod
+    def _format_error(error_msg: str, tb: Optional[str] = None) -> str:
         """Formats an error message with an optional traceback.
 
         Args:
