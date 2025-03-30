@@ -21,7 +21,8 @@ class FileGetter:
         """Initialize FileGetter with repo path manager."""
         self.repo_manager = RepoPathManager.get_instance()
 
-    def _get_interrogate_config(self) -> config.InterrogateConfig:
+    @staticmethod
+    def _get_interrogate_config() -> config.InterrogateConfig:
         """Get the standard interrogate configuration.
 
         Returns:

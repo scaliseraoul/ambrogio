@@ -19,7 +19,8 @@ class DocstringTransformer(cst.CSTTransformer):
         """
         self.docstring_map = docstring_map
 
-    def _make_docstring(self, docstring: str) -> cst.SimpleStatementLine:
+    @staticmethod
+    def _make_docstring(docstring: str) -> cst.SimpleStatementLine:
         """Create a docstring node."""
         # Extract just the docstring part from the code block
         docstring = docstring.split('"""')[1].split('"""')[0].strip()
@@ -76,7 +77,8 @@ class DocstringTransformer(cst.CSTTransformer):
             return self._add_docstring(updated_node, self.docstring_map[qualified_name])
         return updated_node
 
-    def _has_docstring(self, node: cst.CSTNode) -> bool:
+    @staticmethod
+    def _has_docstring(node: cst.CSTNode) -> bool:
         """Check if node already has a docstring."""
         if isinstance(node, (cst.FunctionDef, cst.ClassDef)):
             if node.body.body and isinstance(

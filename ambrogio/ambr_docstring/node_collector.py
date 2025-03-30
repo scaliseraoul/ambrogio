@@ -12,11 +12,13 @@ class NodeNeedingDocstring(cst.CSTVisitor):
         self.nodes_needing_docstrings: Dict[str, str] = {}
         self.current_path: List[str] = []
 
-    def get_qualified_name(self, node_name: str) -> str:
+    @staticmethod
+    def get_qualified_name(node_name: str) -> str:
         """Get fully qualified name for the current node."""
         return node_name
 
-    def _has_docstring(self, node: cst.CSTNode) -> bool:
+    @staticmethod
+    def _has_docstring(node: cst.CSTNode) -> bool:
         """Check if node already has a docstring."""
         if isinstance(node, (cst.FunctionDef, cst.ClassDef)):
             if node.body.body and isinstance(
@@ -27,7 +29,8 @@ class NodeNeedingDocstring(cst.CSTVisitor):
                     return isinstance(stmt.body[0].value, cst.SimpleString)
         return False
 
-    def _get_node_code(self, node: cst.CSTNode) -> str:
+    @staticmethod
+    def _get_node_code(node: cst.CSTNode) -> str:
         """Get the source code of a node."""
         return cst.Module([node]).code.strip()
 
